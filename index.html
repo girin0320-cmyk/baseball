@@ -27,7 +27,7 @@
 
         /* 좌측: 원형 컨트롤 영역 (세로 배치) */
         .control-strip { display: flex; flex-direction: column; gap: 10px; padding-right: 15px; border-right: 2px solid #444; }
-        .circle-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; box-sizing: border-box; }
+        .circle-btn { display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; color: #fff; line-height: 1; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; box-sizing: border-box; }
         /* 버튼별 색상 */
         .btn-swap { background-color: #ff9800; border-color: #ffb74d; } /* 위치 변경 */
         .btn-plus { background-color: #4caf50; border-color: #81c784; } /* 크기 키우기 */
@@ -38,15 +38,15 @@
         .team-row { display: flex; align-items: center; gap: 15px; }
         
         /* 팀명 직접 입력 스타일 (드래그 안되도록 방지) */
-        .team-name { font-size: 24px; font-weight: bold; width: 130px; text-align: center; color: #fff; background: rgba(255,255,255,0.1); border: 1px dashed #777; border-radius: 5px; padding: 6px; outline: none; cursor: text; }
+        .team-name { font-size: 38px; font-weight: bold; width: 210px; text-align: center; color: #fff; background: rgba(255,255,255,0.1); border: 1px dashed #777; border-radius: 5px; padding: 6px; outline: none; cursor: text; }
         .team-name:focus { background: rgba(255,255,255,0.2); border: 1px solid #ffeb3b; }
 
-        .score-wrapper { display: flex; align-items: center; gap: 8px; width: 90px; justify-content: flex-end; }
-        .score { font-size: 44px; font-weight: bold; color: #ffeb3b; line-height: 1; min-width: 45px; text-align: right; user-select: none; }
-        .score-minus { font-size: 14px; color: #aaa; background: #333; border-radius: 4px; padding: 4px 8px; font-weight: bold; }
+        .score-wrapper { display: flex; align-items: center; gap: 8px; width: 150px; justify-content: flex-end; }
+        .score { font-size: 70px; font-weight: bold; color: #ffeb3b; line-height: 1; min-width: 80px; text-align: right; user-select: none; }
+        .score-minus { font-size: 18px; color: #aaa; background: #333; border-radius: 4px; padding: 4px 8px; font-weight: bold; }
 
         /* 구분선 */
-        .divider { width: 2px; background-color: #444; height: 90px; margin: 0 5px; }
+        .divider { width: 2px; background-color: #444; height: auto; align-self: stretch; margin: 0 5px; }
 
         /* 중앙: 이닝 및 베이스 */
         .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px; gap: 8px; }
@@ -72,25 +72,39 @@
         .out .dot.on { background-color: #f44336; box-shadow: 0 0 8px #f44336; }
 
             /* 선수 등장 음악 버튼 영역 (전광판 하단) */
+        [hidden] { display: none !important; }
         #playerButtons { order: 3; display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box; padding: 12px 15px; border-top: 2px solid #555; }
         .player-row { display: flex; align-items: center; gap: 8px; }
-        .row-label { min-width: 48px; font-size: 18px; font-weight: bold; text-align: center; }
+        .row-label { min-width: 48px; font-size: 18px; font-weight: bold; text-align: center; white-space: nowrap; }
+        .player-btn { flex: 1; min-width: 70px; padding: 12px 6px; font-family: inherit; font-size: 18px; font-weight: bold; color: #fff; background: #2b3548; border: 2px solid #5a6b8c; border-radius: 8px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .team1 .row-label { color: #64b5f6; }
         .team1 .player-btn { background: #1e3a5f; border-color: #64b5f6; }
         .team2 .row-label { color: #ff8a65; }
-        .player-btn { display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; overflow: hidden; white-space: nowrap; }
-        .row-label { cursor: default; white-space: nowrap; }
-        .edit-bar { display: flex; justify-content: flex-end; }
-        .edit-toggle { font-family: inherit; font-size: 14px; font-weight: bold; color: #fff; background: #333; border: 1px solid #777; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
-        #playerButtons.editing .edit-toggle { background: #4caf50; border-color: #81c784; }
-        #playerButtons.editing .row-label, #playerButtons.editing .player-btn { outline: 2px dashed #ffeb3b; outline-offset: 2px; cursor: text; user-select: text; -webkit-user-select: text; }
         .team2 .player-btn { background: #6b2f1a; border-color: #ff8a65; }
         .team3 .row-label { color: #81c784; }
         .team3 .player-btn { background: #1f4d2b; border-color: #81c784; }
-        .player-btn { flex: 1; min-width: 70px; padding: 12px 6px; font-family: inherit; font-size: 18px; font-weight: bold; color: #fff; background: #2b3548; border: 2px solid #5a6b8c; border-radius: 8px; }
         .player-btn.playing { background: #ffeb3b; color: #111; border-color: #fff; box-shadow: 0 0 10px #ffeb3b; }
         .player-btn.nofile { background: #7a2b2b; border-color: #e57373; }
-    </style>
+
+        .edit-bar { display: flex; justify-content: flex-end; }
+        .edit-toggle { font-family: inherit; font-size: 14px; font-weight: bold; color: #fff; background: #333; border: 1px solid #777; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+        #playerButtons.editing .edit-toggle { background: #4caf50; border-color: #81c784; }
+        #playerButtons.editing .player-btn { outline: 2px dashed #ffeb3b; outline-offset: 2px; }
+        #playerButtons.editing .player-btn.selected { outline: 3px solid #fff; filter: brightness(1.5); }
+
+        /* 설정 패널 (설정 모드에서 버튼 선택 시 하단에 표시) */
+        #settingsPanel { border: 2px solid #ffeb3b; border-radius: 10px; background: rgba(255,255,255,0.06); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; cursor: default; }
+        .sp-title { font-weight: bold; color: #ffeb3b; font-size: 18px; }
+        .sp-body { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
+        .sp-body label { display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        #settingsPanel input[type=text], #settingsPanel select { font-family: inherit; font-size: 16px; padding: 6px 8px; border-radius: 6px; border: 1px solid #777; background: #1b2231; color: #fff; user-select: text; -webkit-user-select: text; }
+        #spName { width: 130px; }
+        #spSound { min-width: 220px; max-width: 340px; }
+        .sp-btn { font-family: inherit; font-size: 14px; font-weight: bold; color: #fff; background: #333; border: 1px solid #777; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+        .sp-btn:active { opacity: 0.7; }
+        #spStatus { width: 100%; font-size: 14px; color: #aaa; }
+    
+</style>
 </head>
 <body>
 
@@ -98,62 +112,44 @@
     <div id="eventName" contenteditable="true" spellcheck="false">대회명을 입력하세요 (클릭하여 수정)</div>
 
     <div id="playerButtons">
-      <div class="edit-bar"><button id="editToggle" class="edit-toggle clickable" title="제목과 선수 버튼 이름을 수정합니다">✎ 이름 수정</button></div>
-      <div class="player-row team1">
-        <span class="row-label">팀1</span>
-        <button class="player-btn clickable" data-idx="0">선수1</button>
-        <button class="player-btn clickable" data-idx="1">선수2</button>
-        <button class="player-btn clickable" data-idx="2">선수3</button>
-        <button class="player-btn clickable" data-idx="3">선수4</button>
-        <button class="player-btn clickable" data-idx="4">선수5</button>
-        <button class="player-btn clickable" data-idx="5">선수6</button>
-        <button class="player-btn clickable" data-idx="6">선수7</button>
-        <button class="player-btn clickable" data-idx="7">선수8</button>
-        <button class="player-btn clickable" data-idx="8">선수9</button>
-      </div>
-      <div class="player-row team2">
-        <span class="row-label">팀2</span>
-        <button class="player-btn clickable" data-idx="9">선수1</button>
-        <button class="player-btn clickable" data-idx="10">선수2</button>
-        <button class="player-btn clickable" data-idx="11">선수3</button>
-        <button class="player-btn clickable" data-idx="12">선수4</button>
-        <button class="player-btn clickable" data-idx="13">선수5</button>
-        <button class="player-btn clickable" data-idx="14">선수6</button>
-        <button class="player-btn clickable" data-idx="15">선수7</button>
-        <button class="player-btn clickable" data-idx="16">선수8</button>
-        <button class="player-btn clickable" data-idx="17">선수9</button>
-      </div>
-      <div class="player-row team3">
-        <span class="row-label">팀3</span>
-        <button class="player-btn clickable" data-idx="18">선수1</button>
-        <button class="player-btn clickable" data-idx="19">선수2</button>
-        <button class="player-btn clickable" data-idx="20">선수3</button>
-        <button class="player-btn clickable" data-idx="21">선수4</button>
-        <button class="player-btn clickable" data-idx="22">선수5</button>
-        <button class="player-btn clickable" data-idx="23">선수6</button>
-        <button class="player-btn clickable" data-idx="24">선수7</button>
-        <button class="player-btn clickable" data-idx="25">선수8</button>
-        <button class="player-btn clickable" data-idx="26">선수9</button>
+      <div class="edit-bar"><button id="settingsToggle" class="edit-toggle clickable" title="버튼 이름과 재생할 음원을 설정합니다">⚙ 설정</button></div>
+      <div class="player-row team1"></div>
+      <div class="player-row team2"></div>
+      <div class="player-row team3"></div>
+
+      <div id="settingsPanel" hidden>
+        <div class="sp-title" id="spTitle">수정할 버튼을 선택하세요</div>
+        <div class="sp-body" id="spBody" hidden>
+          <label>버튼 이름 <input type="text" id="spName" maxlength="12" autocomplete="off"></label>
+          <label>음원 <select id="spSound"></select></label>
+          <button type="button" class="sp-btn" id="spLoadFolder">📁 폴더 불러오기</button>
+          <button type="button" class="sp-btn" id="spLoadFiles">♪ 파일 직접 선택</button>
+          <button type="button" class="sp-btn" id="spPreview">▶ 미리듣기</button>
+        </div>
+        <div id="spStatus"></div>
+        <input type="file" id="folderInput" webkitdirectory multiple hidden>
+        <input type="file" id="fileInput" accept=".mp3,.wma,.wmv,audio/*" multiple hidden>
       </div>
     </div>
 
-    <div id="scoreboard-main">
+    
+<div id="scoreboard-main">
         <div class="control-strip">
-            <div class="circle-btn btn-swap clickable" onclick="swapTeams()" title="위치 변경 (공수 교대)"></div>
-            <div class="circle-btn btn-plus clickable" onclick="changeScale(0.1)" title="크기 키우기"></div>
-            <div class="circle-btn btn-minus clickable" onclick="changeScale(-0.1)" title="크기 줄이기"></div>
+            <div class="circle-btn btn-swap clickable" onclick="swapTeams()" title="위치 변경 (공수 교대)">⇄</div>
+            <div class="circle-btn btn-plus clickable" onclick="changeScale(0.1)" title="크기 키우기">大</div>
+            <div class="circle-btn btn-minus clickable" onclick="changeScale(-0.1)" title="크기 줄이기">小</div>
         </div>
 
         <div class="teams-container" id="teamsContainer">
             <div class="team-row">
-                <div class="team-name" contenteditable="true" spellcheck="false">상대팀</div>
+                <div class="team-name" contenteditable="true" spellcheck="false">이긴팀</div>
                 <div class="score-wrapper">
                     <div class="score clickable" onclick="changeScore(this, 1)">0</div>
                     <div class="score-minus clickable" onclick="changeScore(this, -1)">-1</div>
                 </div>
             </div>
             <div class="team-row">
-                <div class="team-name" contenteditable="true" spellcheck="false">이천 양신</div>
+                <div class="team-name" contenteditable="true" spellcheck="false">진팀</div>
                 <div class="score-wrapper">
                     <div class="score clickable" onclick="changeScore(this, 1)">0</div>
                     <div class="score-minus clickable" onclick="changeScore(this, -1)">-1</div>
@@ -266,6 +262,17 @@
         let score = parseInt(scoreEl.innerText) + val;
         if (score < 0) score = 0;
         scoreEl.innerText = score;
+        // (점수 자동 정렬은 팀명이 위치 기준이므로 비활성화)
+    }
+
+    // 점수가 높은 팀(이긴 팀)을 위에, 낮은 팀(진 팀)을 아래에 배치 (동점이면 현재 순서 유지)
+    function sortTeamsByScore() {
+        const container = document.getElementById('teamsContainer');
+        const rows = container.getElementsByClassName('team-row');
+        if (rows.length < 2) return;
+        const top = parseInt(rows[0].querySelector('.score').innerText);
+        const bottom = parseInt(rows[1].querySelector('.score').innerText);
+        if (bottom > top) container.insertBefore(rows[1], rows[0]);
     }
 
     // 이닝 변경
@@ -316,100 +323,208 @@
             else dot.classList.remove('on');
         }
     }
-// === 선수 등장 음악 ===
-    // 음악 파일을 받으면 아래 배열의 빈 문자열('')에 파일 경로(또는 data URI)를 넣으면 됩니다.
-    // 0~8: 팀1 선수1~9, 9~17: 팀2 선수1~9, 18~26: 팀3 선수1~9
-    const playerSounds = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''];
-    // 팀1 폴더 음악 연결: 팀1/타자등장1.mp3 ~ 팀1/타자등장9.mp3 (버튼 번호 = 파일 번호)
-    for (let i = 0; i < 9; i++) playerSounds[i] = `팀1/타자등장${i + 1}.mp3`;
-    let currentAudio = null;
-    let currentBtn = null;
+// === 선수 버튼 / 음악 설정 ===
+    const TEAMS = 3, PER = 9;
+    const $ = id => document.getElementById(id);
+    const playerBox = $('playerButtons');
+    const defaultName = i => `선수${(i % PER) + 1}`;
 
+    // 버튼 이름 (이 브라우저에 저장)
+    let names = [];
+    try { const raw = JSON.parse(localStorage.getItem('scoreboardBtnNames') || '[]'); if (Array.isArray(raw)) names = raw; } catch (e) {}
+    const nameOf = i => names[i] || defaultName(i);
+    function saveNames() { try { localStorage.setItem('scoreboardBtnNames', JSON.stringify(names)); } catch (e) {} }
+
+    // 음원 저장소: 버튼별로 지정된 음원은 IndexedDB에 저장해서 새로고침 후에도 유지
+    let db = null;
+    const sounds = {};                 // 버튼 번호 -> { name, url }
+    const libs = { 1: [], 2: [], 3: [] }; // 팀 -> 불러온 폴더의 음원 목록 [{ name, file }]
+
+    function openDB() {
+        return new Promise(res => {
+            try {
+                const r = indexedDB.open('scoreboardSounds', 1);
+                r.onupgradeneeded = () => r.result.createObjectStore('sounds');
+                r.onsuccess = () => res(r.result);
+                r.onerror = () => res(null);
+            } catch (e) { res(null); }
+        });
+    }
+    function idbPut(key, val) {
+        return new Promise(res => {
+            if (!db) return res(false);
+            try { const tx = db.transaction('sounds', 'readwrite'); tx.objectStore('sounds').put(val, key); tx.oncomplete = () => res(true); tx.onerror = () => res(false); } catch (e) { res(false); }
+        });
+    }
+    function idbDel(key) {
+        return new Promise(res => {
+            if (!db) return res(false);
+            try { const tx = db.transaction('sounds', 'readwrite'); tx.objectStore('sounds').delete(key); tx.oncomplete = () => res(true); tx.onerror = () => res(false); } catch (e) { res(false); }
+        });
+    }
+    function idbAll() {
+        return new Promise(res => {
+            if (!db) return res([]);
+            try {
+                const out = [];
+                const cur = db.transaction('sounds').objectStore('sounds').openCursor();
+                cur.onsuccess = () => { const c = cur.result; if (c) { out.push([c.key, c.value]); c.continue(); } else res(out); };
+                cur.onerror = () => res([]);
+            } catch (e) { res([]); }
+        });
+    }
+    (async () => {
+        db = await openDB();
+        (await idbAll()).forEach(([k, v]) => { if (v && v.blob) sounds[k] = { name: v.name, url: URL.createObjectURL(v.blob) }; });
+    })();
+
+    // 버튼 생성 (팀 행마다 9개)
+    const btns = [];
+    playerBox.querySelectorAll('.player-row').forEach((row, t) => {
+        for (let k = 0; k < PER; k++) {
+            const i = t * PER + k;
+            const b = document.createElement('button');
+            b.className = 'player-btn clickable';
+            b.textContent = nameOf(i);
+            b.addEventListener('click', () => onBtnClick(i));
+            row.appendChild(b);
+            btns[i] = b;
+        }
+    });
+
+    // 재생
+    let currentAudio = null, currentBtn = null;
     function stopAudio() {
         if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
         if (currentBtn) currentBtn.classList.remove('playing');
         currentAudio = null; currentBtn = null;
     }
+    function flash(b) { b.classList.add('nofile'); setTimeout(() => b.classList.remove('nofile'), 400); }
 
-    // 버튼 안의 글자를 브라우저에서 자유롭게 수정할 수 있도록 <button>을 <div>로 교체
-    document.querySelectorAll('button.player-btn').forEach(b => {
-        const d = document.createElement('div');
-        d.className = b.className;
-        d.dataset.idx = b.dataset.idx;
-        d.setAttribute('role', 'button');
-        d.textContent = b.textContent;
-        b.replaceWith(d);
-    });
-
-    document.querySelectorAll('.player-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (editMode) return; // 수정 모드에서는 음악 재생 안 함
-            const idx = parseInt(btn.dataset.idx);
-            const src = playerSounds[idx];
-
-            // 같은 버튼을 다시 누르면 정지
-            if (currentBtn === btn) { stopAudio(); return; }
-            stopAudio();
-
-            if (!src) {
-                // 음악 파일이 아직 없는 경우: 잠깐 빨갛게 표시
-                btn.classList.add('nofile');
-                setTimeout(() => btn.classList.remove('nofile'), 400);
-                return;
-            }
-            currentAudio = new Audio(src);
-            currentBtn = btn;
-            btn.classList.add('playing');
-            currentAudio.addEventListener('ended', stopAudio);
-            currentAudio.play().catch(() => stopAudio());
-        });
-    });
-// === 제목/버튼 이름 수정 모드 ===
-    let editMode = false;
-    const editToggle = document.getElementById('editToggle');
-    const playerBox = document.getElementById('playerButtons');
-    const editables = () => Array.from(document.querySelectorAll('#playerButtons .row-label, #playerButtons .player-btn'));
-
-    // 제목 라벨은 드래그 시작에서 제외되도록 clickable 클래스 부여
-    document.querySelectorAll('#playerButtons .row-label').forEach(l => l.classList.add('clickable'));
-    editables().forEach(el => { el.dataset.default = el.textContent; });
-
-    function saveNames() {
-        try { localStorage.setItem('scoreboardNames', JSON.stringify(editables().map(el => el.textContent.trim()))); } catch (e) {}
-    }
-    function loadNames() {
-        try {
-            const raw = localStorage.getItem('scoreboardNames');
-            if (!raw) return;
-            const arr = JSON.parse(raw);
-            const els = editables();
-            if (Array.isArray(arr)) els.forEach((el, i) => { if (arr[i]) el.textContent = arr[i]; });
-        } catch (e) {}
-    }
-    loadNames();
-
-    editToggle.addEventListener('click', () => {
-        editMode = !editMode;
+    function onBtnClick(i) {
+        if (settingsMode) { selectPanelBtn(i); return; }
+        const b = btns[i];
+        if (currentBtn === b) { stopAudio(); return; }   // 같은 버튼 다시 누르면 정지
         stopAudio();
-        playerBox.classList.toggle('editing', editMode);
-        editToggle.textContent = editMode ? '✔ 수정 완료' : '✎ 이름 수정';
-        editables().forEach(el => {
-            el.setAttribute('contenteditable', editMode ? 'true' : 'false');
-            if (!el.textContent.trim()) el.textContent = el.dataset.default;
-        });
-        if (!editMode) saveNames();
+        const s = sounds[i];
+        if (!s) { flash(b); return; }                    // 설정된 음원이 없으면 잠깐 빨갛게
+        currentAudio = new Audio(s.url);
+        currentBtn = b;
+        b.classList.add('playing');
+        currentAudio.addEventListener('ended', stopAudio);
+        currentAudio.play().catch(() => { stopAudio(); flash(b); });
+    }
+
+    // 설정 모드
+    let settingsMode = false, selectedIdx = null;
+    const teamOf = i => Math.floor(i / PER) + 1;
+
+    $('settingsToggle').addEventListener('click', () => {
+        settingsMode = !settingsMode;
+        stopAudio();
+        playerBox.classList.toggle('editing', settingsMode);
+        $('settingsPanel').hidden = !settingsMode;
+        $('settingsToggle').textContent = settingsMode ? '✔ 설정 완료' : '⚙ 설정';
+        if (settingsMode) { renderPanel(); }
+        else { selectedIdx = null; btns.forEach(b => b.classList.remove('selected')); saveNames(); }
     });
 
-    playerBox.addEventListener('keydown', e => {
-        if (editMode && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+    function selectPanelBtn(i) {
+        selectedIdx = i;
+        btns.forEach((b, k) => b.classList.toggle('selected', k === i));
+        renderPanel();
+    }
+
+    function addOption(sel, value, text) {
+        const o = document.createElement('option');
+        o.value = value; o.textContent = text; sel.appendChild(o);
+    }
+
+    function renderPanel(statusText) {
+        const body = $('spBody'), status = $('spStatus');
+        if (selectedIdx === null) {
+            $('spTitle').textContent = '수정할 버튼을 선택하세요';
+            body.hidden = true; status.textContent = '';
+            return;
+        }
+        const i = selectedIdx, team = teamOf(i), lib = libs[team], cur = sounds[i];
+        $('spTitle').textContent = `팀${team} · ${nameOf(i)} 설정`;
+        body.hidden = false;
+        $('spName').value = nameOf(i);
+        $('spLoadFolder').textContent = `📁 팀${team} 폴더 불러오기`;
+
+        const sel = $('spSound');
+        sel.innerHTML = '';
+        addOption(sel, '', '(음원 없음)');
+        const found = cur ? lib.findIndex(f => f.name === cur.name) : -1;
+        if (cur && found < 0) addOption(sel, '__cur__', `현재 설정: ${cur.name}`);
+        lib.forEach((f, k) => addOption(sel, String(k), f.name));
+        sel.value = !cur ? '' : (found >= 0 ? String(found) : '__cur__');
+
+        status.textContent = statusText || (lib.length
+            ? `팀${team} 음원 ${lib.length}개 · 목록에서 선택하세요.`
+            : `"팀${team} 폴더 불러오기"로 음악 폴더를 선택하면 음원 목록이 나타납니다.`);
+    }
+
+    // 이름 변경
+    $('spName').addEventListener('input', () => {
+        if (selectedIdx === null) return;
+        const v = $('spName').value.trim();
+        if (v) names[selectedIdx] = v; else delete names[selectedIdx];
+        btns[selectedIdx].textContent = nameOf(selectedIdx);
+        $('spTitle').textContent = `팀${teamOf(selectedIdx)} · ${nameOf(selectedIdx)} 설정`;
+        saveNames();
     });
-    playerBox.addEventListener('paste', e => {
-        if (!editMode) return;
-        e.preventDefault();
-        const t = (e.clipboardData || window.clipboardData).getData('text').replace(/\s+/g, ' ');
-        document.execCommand('insertText', false, t);
+
+    // 음원 선택
+    $('spSound').addEventListener('change', async () => {
+        const i = selectedIdx;
+        if (i === null) return;
+        const v = $('spSound').value;
+        if (v === '__cur__') return;
+        stopAudio();
+        if (sounds[i]) { URL.revokeObjectURL(sounds[i].url); delete sounds[i]; }
+        if (v === '') {
+            await idbDel(i);
+            $('spStatus').textContent = '음원 설정을 해제했습니다.';
+            return;
+        }
+        const f = libs[teamOf(i)][parseInt(v)];
+        sounds[i] = { name: f.name, url: URL.createObjectURL(f.file) };
+        const ok = await idbPut(i, { name: f.name, blob: f.file });
+        $('spStatus').textContent = ok
+            ? `"${f.name}" 설정 완료. 설정 완료를 누르면 이 음악이 재생됩니다.`
+            : `"${f.name}" 설정됨 (이 브라우저에서는 새로고침 후 유지되지 않을 수 있습니다).`;
     });
-    playerBox.addEventListener('input', () => { if (editMode) saveNames(); });
+
+    // 폴더 / 파일 불러오기
+    function loadLibrary(files) {
+        if (selectedIdx === null) return;
+        const team = teamOf(selectedIdx);
+        libs[team] = Array.from(files)
+            .filter(f => /\.(mp3|wma|wmv)$/i.test(f.name))
+            .sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }))
+            .map(f => ({ name: f.name, file: f }));
+        renderPanel(libs[team].length ? undefined : 'mp3 / wma / wmv 파일을 찾지 못했습니다.');
+    }
+    $('spLoadFolder').addEventListener('click', () => $('folderInput').click());
+    $('spLoadFiles').addEventListener('click', () => $('fileInput').click());
+    $('folderInput').addEventListener('change', e => { loadLibrary(e.target.files); e.target.value = ''; });
+    $('fileInput').addEventListener('change', e => { loadLibrary(e.target.files); e.target.value = ''; });
+
+    // 미리듣기
+    $('spPreview').addEventListener('click', () => {
+        const s = sounds[selectedIdx];
+        if (!s) { $('spStatus').textContent = '먼저 음원을 선택하세요.'; return; }
+        stopAudio();
+        currentAudio = new Audio(s.url);
+        currentAudio.addEventListener('ended', stopAudio);
+        currentAudio.play().catch(() => { stopAudio(); $('spStatus').textContent = '이 파일은 브라우저에서 재생할 수 없습니다 (wma/wmv 등은 미지원일 수 있음).'; });
+    });
+
+    // 설정 패널 조작 시 전광판이 드래그되지 않도록 방지
+    ['mousedown', 'touchstart'].forEach(ev => $('settingsPanel').addEventListener(ev, e => e.stopPropagation(), { passive: true }));
+
 </script>
 </body>
 </html>
