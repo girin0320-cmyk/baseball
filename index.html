@@ -338,13 +338,23 @@
     // 음원 저장소: 버튼별로 지정된 음원은 IndexedDB에 저장해서 새로고침 후에도 유지
     let db = null;
     const sounds = {};                 // 버튼 번호 -> { name, url }
+    const autoLoaded = { 1: false, 2: false, 3: false };   // 폴더 자동 연결 성공 여부
+    const AUTO_DIR = { 1: '팀1/' };                          // 자동 연결할 폴더 (팀2, 팀3은 아직 없음)
+    const AUTO_PATTERN = n => `타자등장${n}.mp3`;             // n번째 선수 기본 음원 파일명
+    let autoPick = {};                                       // 설정 메뉴에서 바꾼 선택 (버튼 번호 -> 파일명)
+    try { autoPick = JSON.parse(localStorage.getItem('scoreboardAutoPick') || '{}') || {}; } catch (e) {}
+    function saveAutoPick() { try { localStorage.setItem('scoreboardAutoPick', JSON.stringify(autoPick)); } catch (e) {} }
     const libs = { 1: [], 2: [], 3: [] }; // 팀 -> 불러온 폴더의 음원 목록 [{ name, file }]
 
     function openDB() {
         return new Promise(res => {
             try {
-                const r = indexedDB.open('scoreboardSounds', 1);
-                r.onupgradeneeded = () => r.result.createObjectStore('sounds');
+                const r = indexedDB.open('scoreboardSounds', 2);
+                r.onupgradeneeded = () => {
+                    const d = r.result;
+                    if (!d.objectStoreNames.contains('sounds')) d.createObjectStore('sounds');
+                    if (!d.objectStoreNames.contains('handles')) d.createObjectStore('handles');
+                };
                 r.onsuccess = () => res(r.result);
                 r.onerror = () => res(null);
             } catch (e) { res(null); }
@@ -376,7 +386,119 @@
     (async () => {
         db = await openDB();
         (await idbAll()).forEach(([k, v]) => { if (v && v.blob) sounds[k] = { name: v.name, url: URL.createObjectURL(v.blob) }; });
+        await discoverFolder(1);
     })();
+
+    // 폴더 자동 연결: HTML과 같은 위치의 '팀1' 폴더를 찾아 음원 목록을 만들고 기본 음원을 연결
+    function probeAudio(url) {
+        return new Promise(res => {
+            const a = new Audio();
+            const done = ok => { clearTimeout(t); a.onloadedmetadata = a.onerror = null; res(ok); };
+            const t = setTimeout(() => done(false), 3000);
+            a.onloadedmetadata = () => done(true);
+            a.onerror = () => done(false);
+            a.preload = 'metadata';
+            a.src = url;
+        });
+    }
+    // 폴더 안의 files.js(파일명 목록)를 읽음: 로컬에서 HTML을 열어도 동작하는 방식
+    function loadManifest(team) {
+        return new Promise(res => {
+            const sc = document.createElement('script');
+            sc.src = AUTO_DIR[team] + 'files.js';
+            sc.onload = () => {
+                const l = (window.TEAM_FILES || {})[team];
+                res(Array.isArray(l) ? l.filter(n => /\.(mp3|wma|wmv)$/i.test(n)) : []);
+            };
+            sc.onerror = () => res([]);
+            document.head.appendChild(sc);
+        });
+    }
+    // 폴더 연결(File System Access API): 폴더를 한 번 선택해 두면 이후에는 그 폴더의 모든 파일명을 자동으로 읽는다
+    let dirHandle = null;
+    function handleGet() {
+        return new Promise(res => {
+            if (!db) return res(null);
+            try { const rq = db.transaction('handles').objectStore('handles').get('team1'); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => res(null); } catch (e) { res(null); }
+        });
+    }
+    function handlePut(h) {
+        return new Promise(res => {
+            if (!db) return res(false);
+            try { const tx = db.transaction('handles', 'readwrite'); tx.objectStore('handles').put(h, 'team1'); tx.oncomplete = () => res(true); tx.onerror = () => res(false); } catch (e) { res(false); }
+        });
+    }
+    async function readDirHandle(team, h) {
+        const files = [];
+        for await (const e of h.values()) {
+            if (e.kind === 'file' && /\.(mp3|wma|wmv)$/i.test(e.name)) files.push(await e.getFile());
+        }
+        files.sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+        libs[team] = files.map(f => ({ name: f.name, file: f }));
+        autoLoaded[team] = true;
+        if (settingsMode && selectedIdx !== null) renderPanel();
+    }
+    async function tryHandle(team) {          // 페이지를 열 때: 이전에 연결한 폴더 권한이 살아 있으면 자동으로 읽는다
+        if (!window.showDirectoryPicker) return false;
+        dirHandle = await handleGet();
+        if (!dirHandle) return false;
+        try {
+            if ((await dirHandle.queryPermission({ mode: 'read' })) === 'granted') { await readDirHandle(team, dirHandle); return true; }
+        } catch (e) {}
+        return false;
+    }
+    async function connectFolder(team) {      // 버튼을 눌렀을 때: 권한 재허용 또는 폴더 선택
+        if (!window.showDirectoryPicker) return 'fail';
+        try {
+            if (dirHandle && (await dirHandle.requestPermission({ mode: 'read' })) === 'granted') { await readDirHandle(team, dirHandle); return 'ok'; }
+            const h = await window.showDirectoryPicker({ mode: 'read' });
+            dirHandle = h;
+            await handlePut(h);
+            await readDirHandle(team, h);
+            return 'ok';
+        } catch (e) { return e && e.name === 'AbortError' ? 'cancel' : 'fail'; }
+    }
+
+    async function discoverFolder(team) {
+        const dir = AUTO_DIR[team];
+        if (!dir) return;
+        if (await tryHandle(team)) return;
+        let list = await loadManifest(team);
+        // 1) 서버가 폴더 목록(디렉터리 인덱스)을 제공하면 파일명을 그대로 읽는다
+        try {
+            const r = await fetch(dir, { cache: 'no-store' });
+            if (r.ok) {
+                const html = await r.text();
+                const re = /href="([^"?#]+\.(?:mp3|wma|wmv))"/gi;
+                let m;
+                while ((m = re.exec(html))) {
+                    const raw = m[1].split('/').pop();
+                    let nm; try { nm = decodeURIComponent(raw); } catch (e) { nm = raw; }
+                    if (!list.includes(nm)) list.push(nm);
+                }
+            }
+        } catch (e) {}
+        // 2) 목록을 읽을 수 없으면(로컬에서 파일로 열었을 때 등) 타자등장1~20.mp3 가 있는지 확인
+        if (!list.length) {
+            const found = await Promise.all(Array.from({ length: 20 }, (_, k) => k + 1).map(n =>
+                probeAudio(dir + encodeURIComponent(AUTO_PATTERN(n))).then(ok => ok ? AUTO_PATTERN(n) : null)));
+            list = found.filter(Boolean);
+        }
+        if (!list.length) return;
+        list.sort((a, b) => a.localeCompare(b, 'ko', { numeric: true }));
+        libs[team] = list.map(nm => ({ name: nm, url: dir + encodeURIComponent(nm) }));
+        autoLoaded[team] = true;
+        // 설정 메뉴에서 이전에 선택해 둔 음원만 복원 (기본 자동 연결 없음)
+        for (let k = 0; k < PER; k++) {
+            const i = (team - 1) * PER + k;
+            if (sounds[i]) continue;
+            const nm = autoPick[i];
+            if (!nm) continue;
+            const e = libs[team].find(f => f.name === nm);
+            if (e) sounds[i] = { name: e.name, url: e.url };
+        }
+        if (settingsMode && selectedIdx !== null) renderPanel();
+    }
 
     // 버튼 생성 (팀 행마다 9개)
     const btns = [];
@@ -452,6 +574,8 @@
         body.hidden = false;
         $('spName').value = nameOf(i);
         $('spLoadFolder').textContent = `📁 팀${team} 폴더 불러오기`;
+        $('spLoadFolder').hidden = autoLoaded[team];   // 자동 연결된 팀은 직접 선택 버튼 숨김
+        $('spLoadFiles').hidden = autoLoaded[team];
 
         const sel = $('spSound');
         sel.innerHTML = '';
@@ -462,7 +586,7 @@
         sel.value = !cur ? '' : (found >= 0 ? String(found) : '__cur__');
 
         status.textContent = statusText || (lib.length
-            ? `팀${team} 음원 ${lib.length}개 · 목록에서 선택하세요.`
+            ? (autoLoaded[team] ? `팀${team} 폴더 자동 연결 · 음원 ${lib.length}개 · 목록에서 선택하세요.` : `팀${team} 음원 ${lib.length}개 · 목록에서 선택하세요.`)
             : `"팀${team} 폴더 불러오기"로 음악 폴더를 선택하면 음원 목록이 나타납니다.`);
     }
 
@@ -486,10 +610,18 @@
         if (sounds[i]) { URL.revokeObjectURL(sounds[i].url); delete sounds[i]; }
         if (v === '') {
             await idbDel(i);
+            if (autoLoaded[teamOf(i)]) { autoPick[i] = ''; saveAutoPick(); }
             $('spStatus').textContent = '음원 설정을 해제했습니다.';
             return;
         }
         const f = libs[teamOf(i)][parseInt(v)];
+        if (f.url) {   // 폴더 자동 연결된 음원
+            sounds[i] = { name: f.name, url: f.url };
+            autoPick[i] = f.name; saveAutoPick();
+            await idbDel(i);
+            $('spStatus').textContent = `"${f.name}" 설정 완료. 설정 완료를 누르면 이 음악이 재생됩니다.`;
+            return;
+        }
         sounds[i] = { name: f.name, url: URL.createObjectURL(f.file) };
         const ok = await idbPut(i, { name: f.name, blob: f.file });
         $('spStatus').textContent = ok
@@ -507,7 +639,13 @@
             .map(f => ({ name: f.name, file: f }));
         renderPanel(libs[team].length ? undefined : 'mp3 / wma / wmv 파일을 찾지 못했습니다.');
     }
-    $('spLoadFolder').addEventListener('click', () => $('folderInput').click());
+    $('spLoadFolder').addEventListener('click', async () => {
+        if (selectedIdx !== null && teamOf(selectedIdx) === 1) {
+            const r = await connectFolder(1);
+            if (r === 'ok' || r === 'cancel') return;
+        }
+        $('folderInput').click();   // 폴더 연결을 지원하지 않는 환경에서는 일반 폴더 선택
+    });
     $('spLoadFiles').addEventListener('click', () => $('fileInput').click());
     $('folderInput').addEventListener('change', e => { loadLibrary(e.target.files); e.target.value = ''; });
     $('fileInput').addEventListener('change', e => { loadLibrary(e.target.files); e.target.value = ''; });
