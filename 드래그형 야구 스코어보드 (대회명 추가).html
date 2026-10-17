@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>드래그형 야구 스코어보드 (대회명 추가)</title>
+    <style>
+        /* 방송용 투명 배경 및 글자 선택 방지 */
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: transparent; margin: 0; padding: 0; user-select: none; width: 100vw; height: 100vh; overflow: hidden; }
+        
+        /* 전체 스코어보드 레이아웃 (세로 방향 구성: 대회명 + 메인 점수판) */
+        #scoreboard { background-color: rgba(15, 20, 30, 0.9); border: 2px solid #555; border-radius: 12px; width: max-content; display: flex; flex-direction: column; align-items: flex-start; color: white; box-shadow: 0px 5px 15px rgba(0,0,0,0.5); transform-origin: top left; transition: transform 0.2s ease; position: absolute; top: 30px; left: 30px; cursor: grab; z-index: 1000; }
+        
+        /* 드래그 중일 때 효과 */
+        #scoreboard:active { cursor: grabbing; border-color: #ffeb3b; box-shadow: 0px 8px 25px rgba(255, 235, 59, 0.3); }
+
+        /* [추가] 상단 대회명 입력란 스타일 */
+        #eventName { width: 100%; border-bottom: 2px solid #555; padding: 10px 15px; box-sizing: border-box; font-size: 20px; font-weight: bold; color: #ffeb3b; outline: none; cursor: text; text-align: left; }
+        #eventName:focus { background: rgba(255,255,255,0.1); border-color: #ffeb3b; }
+
+        /* 메인 점수판 영역 (기존 콘텐츠들 가로 배치) */
+        #scoreboard-main { display: flex; align-items: center; padding: 15px 25px 15px 15px; gap: 20px; }
+
+        /* 공통 터치 요소 스타일 */
+        .clickable { cursor: pointer; transition: 0.1s; }
+        .clickable:active { transform: scale(0.95); opacity: 0.8; }
+
+        /* 좌측: 원형 컨트롤 영역 (세로 배치) */
+        .control-strip { display: flex; flex-direction: column; gap: 10px; padding-right: 15px; border-right: 2px solid #444; }
+        .circle-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; box-sizing: border-box; }
+        /* 버튼별 색상 */
+        .btn-swap { background-color: #ff9800; border-color: #ffb74d; } /* 위치 변경 */
+        .btn-plus { background-color: #4caf50; border-color: #81c784; } /* 크기 키우기 */
+        .btn-minus { background-color: #f44336; border-color: #e57373; } /* 크기 줄이기 */
+
+        /* 팀 및 점수 영역 (세로 배치) */
+        .teams-container { display: flex; flex-direction: column; gap: 12px; }
+        .team-row { display: flex; align-items: center; gap: 15px; }
+        
+        /* 팀명 직접 입력 스타일 (드래그 안되도록 방지) */
+        .team-name { font-size: 24px; font-weight: bold; width: 130px; text-align: center; color: #fff; background: rgba(255,255,255,0.1); border: 1px dashed #777; border-radius: 5px; padding: 6px; outline: none; cursor: text; }
+        .team-name:focus { background: rgba(255,255,255,0.2); border: 1px solid #ffeb3b; }
+
+        .score-wrapper { display: flex; align-items: center; gap: 8px; width: 90px; justify-content: flex-end; }
+        .score { font-size: 44px; font-weight: bold; color: #ffeb3b; line-height: 1; min-width: 45px; text-align: right; user-select: none; }
+        .score-minus { font-size: 14px; color: #aaa; background: #333; border-radius: 4px; padding: 4px 8px; font-weight: bold; }
+
+        /* 구분선 */
+        .divider { width: 2px; background-color: #444; height: 90px; margin: 0 5px; }
+
+        /* 중앙: 이닝 및 베이스 */
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px; gap: 8px; }
+        .inning { font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .inning-arrow { color: #ff9800; font-size: 28px; }
+
+        /* [크기 확대] 베이스 (루상) 그래픽 영역 */
+        .diamond { position: relative; width: 60px; height: 60px; margin-top: 8px; }
+        .base { width: 20px; height: 20px; background-color: #555; border: 2px solid #888; transform: rotate(45deg); position: absolute; box-sizing: border-box; }
+        .base.on { background-color: #ffeb3b; border-color: #fff; box-shadow: 0 0 10px #ffeb3b; }
+        /* 베이스 위치 조정 (다이아몬드 크기에 맞춰) */
+        .b2 { top: -4px; left: 20px; }   /* 2루 */
+        .b3 { top: 20px; left: -4px; }   /* 3루 */
+        .b1 { top: 20px; left: 44px; }  /* 1루 */
+
+        /* [크기 확대] 우측: 볼카운트 (SBO) 영역 */
+        .sbo-box { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 150px; }
+        .sbo-row { display: flex; align-items: center; font-size: 24px; font-weight: bold; gap: 12px; padding: 4px 0; } /* 행 간격 및 텍스트 키움 */
+        .dot { width: 22px; height: 22px; background-color: #444; border-radius: 50%; } /* 불빛 크기 확대 */
+        /* 불빛 색상 */
+        .ball .dot.on { background-color: #4caf50; box-shadow: 0 0 8px #4caf50; }
+        .strike .dot.on { background-color: #ffeb3b; box-shadow: 0 0 8px #ffeb3b; }
+        .out .dot.on { background-color: #f44336; box-shadow: 0 0 8px #f44336; }
+
+            /* 선수 등장 음악 버튼 영역 (전광판 하단) */
+        #playerButtons { order: 3; display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box; padding: 12px 15px; border-top: 2px solid #555; }
+        .player-row { display: flex; align-items: center; gap: 8px; }
+        .row-label { min-width: 48px; font-size: 18px; font-weight: bold; text-align: center; }
+        .team1 .row-label { color: #64b5f6; }
+        .team1 .player-btn { background: #1e3a5f; border-color: #64b5f6; }
+        .team2 .row-label { color: #ff8a65; }
+        .player-btn { display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; overflow: hidden; white-space: nowrap; }
+        .row-label { cursor: default; white-space: nowrap; }
+        .edit-bar { display: flex; justify-content: flex-end; }
+        .edit-toggle { font-family: inherit; font-size: 14px; font-weight: bold; color: #fff; background: #333; border: 1px solid #777; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+        #playerButtons.editing .edit-toggle { background: #4caf50; border-color: #81c784; }
+        #playerButtons.editing .row-label, #playerButtons.editing .player-btn { outline: 2px dashed #ffeb3b; outline-offset: 2px; cursor: text; user-select: text; -webkit-user-select: text; }
+        .team2 .player-btn { background: #6b2f1a; border-color: #ff8a65; }
+        .team3 .row-label { color: #81c784; }
+        .team3 .player-btn { background: #1f4d2b; border-color: #81c784; }
+        .player-btn { flex: 1; min-width: 70px; padding: 12px 6px; font-family: inherit; font-size: 18px; font-weight: bold; color: #fff; background: #2b3548; border: 2px solid #5a6b8c; border-radius: 8px; }
+        .player-btn.playing { background: #ffeb3b; color: #111; border-color: #fff; box-shadow: 0 0 10px #ffeb3b; }
+        .player-btn.nofile { background: #7a2b2b; border-color: #e57373; }
+    </style>
+</head>
+<body>
+
+<div id="scoreboard">
+    <div id="eventName" contenteditable="true" spellcheck="false">대회명을 입력하세요 (클릭하여 수정)</div>
+
+    <div id="playerButtons">
+      <div class="edit-bar"><button id="editToggle" class="edit-toggle clickable" title="제목과 선수 버튼 이름을 수정합니다">✎ 이름 수정</button></div>
+      <div class="player-row team1">
+        <span class="row-label">팀1</span>
+        <button class="player-btn clickable" data-idx="0">선수1</button>
+        <button class="player-btn clickable" data-idx="1">선수2</button>
+        <button class="player-btn clickable" data-idx="2">선수3</button>
+        <button class="player-btn clickable" data-idx="3">선수4</button>
+        <button class="player-btn clickable" data-idx="4">선수5</button>
+        <button class="player-btn clickable" data-idx="5">선수6</button>
+        <button class="player-btn clickable" data-idx="6">선수7</button>
+        <button class="player-btn clickable" data-idx="7">선수8</button>
+        <button class="player-btn clickable" data-idx="8">선수9</button>
+      </div>
+      <div class="player-row team2">
+        <span class="row-label">팀2</span>
+        <button class="player-btn clickable" data-idx="9">선수1</button>
+        <button class="player-btn clickable" data-idx="10">선수2</button>
+        <button class="player-btn clickable" data-idx="11">선수3</button>
+        <button class="player-btn clickable" data-idx="12">선수4</button>
+        <button class="player-btn clickable" data-idx="13">선수5</button>
+        <button class="player-btn clickable" data-idx="14">선수6</button>
+        <button class="player-btn clickable" data-idx="15">선수7</button>
+        <button class="player-btn clickable" data-idx="16">선수8</button>
+        <button class="player-btn clickable" data-idx="17">선수9</button>
+      </div>
+      <div class="player-row team3">
+        <span class="row-label">팀3</span>
+        <button class="player-btn clickable" data-idx="18">선수1</button>
+        <button class="player-btn clickable" data-idx="19">선수2</button>
+        <button class="player-btn clickable" data-idx="20">선수3</button>
+        <button class="player-btn clickable" data-idx="21">선수4</button>
+        <button class="player-btn clickable" data-idx="22">선수5</button>
+        <button class="player-btn clickable" data-idx="23">선수6</button>
+        <button class="player-btn clickable" data-idx="24">선수7</button>
+        <button class="player-btn clickable" data-idx="25">선수8</button>
+        <button class="player-btn clickable" data-idx="26">선수9</button>
+      </div>
+    </div>
+
+    <div id="scoreboard-main">
+        <div class="control-strip">
+            <div class="circle-btn btn-swap clickable" onclick="swapTeams()" title="위치 변경 (공수 교대)"></div>
+            <div class="circle-btn btn-plus clickable" onclick="changeScale(0.1)" title="크기 키우기"></div>
+            <div class="circle-btn btn-minus clickable" onclick="changeScale(-0.1)" title="크기 줄이기"></div>
+        </div>
+
+        <div class="teams-container" id="teamsContainer">
+            <div class="team-row">
+                <div class="team-name" contenteditable="true" spellcheck="false">상대팀</div>
+                <div class="score-wrapper">
+                    <div class="score clickable" onclick="changeScore(this, 1)">0</div>
+                    <div class="score-minus clickable" onclick="changeScore(this, -1)">-1</div>
+                </div>
+            </div>
+            <div class="team-row">
+                <div class="team-name" contenteditable="true" spellcheck="false">이천 양신</div>
+                <div class="score-wrapper">
+                    <div class="score clickable" onclick="changeScore(this, 1)">0</div>
+                    <div class="score-minus clickable" onclick="changeScore(this, -1)">-1</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="center-box">
+            <div class="inning">
+                <span class="inning-arrow clickable" id="inningHalf" onclick="toggleHalf()">▲</span>
+                <span class="clickable" id="inningNum" onclick="addInning()">1</span>
+            </div>
+            <div class="diamond">
+                <div class="base b2 clickable" id="base2" onclick="toggleBase('base2')" title="2루 주자 채우기"></div>
+                <div class="base b3 clickable" id="base3" onclick="toggleBase('base3')" title="3루 주자 채우기"></div>
+                <div class="base b1 clickable" id="base1" onclick="toggleBase('base1')" title="1루 주자 채우기"></div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="sbo-box">
+            <div class="sbo-row ball clickable" onclick="cycleCount('B', 3)" title="볼 카운트 (터치하여 올리기)">
+                <span style="color:#4caf50; min-width: 25px; text-align: center;">B</span> <div class="dot" id="B1"></div><div class="dot" id="B2"></div><div class="dot" id="B3"></div>
+            </div>
+            <div class="sbo-row strike clickable" onclick="cycleCount('S', 2)" title="스트라이크 카운트 (터치하여 올리기)">
+                <span style="color:#ffeb3b; min-width: 25px; text-align: center;">S</span> <div class="dot" id="S1"></div><div class="dot" id="S2"></div>
+            </div>
+            <div class="sbo-row out clickable" onclick="cycleCount('O', 2)" title="아웃 카운트 (터치하여 올리기)">
+                <span style="color:#f44336; min-width: 25px; text-align: center;">O</span> <div class="dot" id="O1"></div><div class="dot" id="O2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === 화면 위치 이동 기능 (드래그) 구현 ===
+    const scoreboard = document.getElementById('scoreboard');
+    const eventName = document.getElementById('eventName');
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    scoreboard.addEventListener('mousedown', (e) => {
+        // [수정] 대회명 입력란 클릭 시 드래그 안되도록 방지
+        if (e.target.closest('.clickable') || e.target.classList.contains('team-name') || e.target.id === 'eventName') return;
+        
+        isDragging = true;
+        offsetX = e.clientX - scoreboard.offsetLeft;
+        offsetY = e.clientY - scoreboard.offsetTop;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        scoreboard.style.left = `${e.clientX - offsetX}px`;
+        scoreboard.style.top = `${e.clientY - offsetY}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    // 스마트폰/태블릿 터치 드래그 지원
+    scoreboard.addEventListener('touchstart', (e) => {
+        // [수정] 대회명 입력란 터치 시 드래그 안되도록 방지
+        if (e.target.closest('.clickable') || e.target.classList.contains('team-name') || e.target.id === 'eventName') return;
+        isDragging = true;
+        let touch = e.touches[0];
+        offsetX = touch.clientX - scoreboard.offsetLeft;
+        offsetY = touch.clientY - scoreboard.offsetTop;
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        let touch = e.touches[0];
+        e.preventDefault(); 
+        scoreboard.style.left = `${touch.clientX - offsetX}px`;
+        scoreboard.style.top = `${touch.clientY - offsetY}px`;
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+
+    // === 스코어보드 조작 기능 로직 ===
+
+    // 크기 조절
+    let currentScale = 1.0;
+    function changeScale(val) {
+        currentScale += val;
+        if (currentScale < 0.4) currentScale = 0.4;
+        if (currentScale > 2.0) currentScale = 2.0;
+        scoreboard.style.transform = `scale(${currentScale})`;
+    }
+
+    // 상하 팀 위치 반전 (주황색 버튼)
+    function swapTeams() {
+        let container = document.getElementById('teamsContainer');
+        let rows = container.getElementsByClassName('team-row');
+        if (rows.length >= 2) {
+            container.insertBefore(rows[1], rows[0]);
+        }
+    }
+
+    // 점수 변경
+    function changeScore(element, val) {
+        let scoreEl = (val > 0) ? element : element.previousElementSibling;
+        let score = parseInt(scoreEl.innerText) + val;
+        if (score < 0) score = 0;
+        scoreEl.innerText = score;
+    }
+
+    // 이닝 변경
+    function addInning() {
+        let el = document.getElementById('inningNum');
+        let inn = parseInt(el.innerText) + 1;
+        if (inn > 9) inn = 1;
+        el.innerText = inn;
+    }
+
+    // 이닝 초/말 변경
+    function toggleHalf() {
+        let el = document.getElementById('inningHalf');
+        el.innerText = (el.innerText === '▲') ? '▼' : '▲';
+    }
+
+    // 루상(베이스) 변경
+    function toggleBase(id) {
+        document.getElementById(id).classList.toggle('on');
+    }
+
+    // 볼카운트 변경 및 자동 리셋
+    let counts = { 'B': 0, 'S': 0, 'O': 0 };
+    function cycleCount(type, max) {
+        counts[type]++;
+        if (counts[type] > max) counts[type] = 0;
+
+        for (let i = 1; i <= max; i++) {
+            let dot = document.getElementById(type + i);
+            if (i <= counts[type]) dot.classList.add('on');
+            else dot.classList.remove('on');
+        }
+
+        if (type === 'S' && counts['S'] === 0) { counts['B'] = 0; updateDots('B', 3); }
+        if (type === 'O' && counts['O'] === 0) {
+            counts['B'] = 0; updateDots('B', 3);
+            counts['S'] = 0; updateDots('S', 2);
+            document.getElementById('base1').classList.remove('on');
+            document.getElementById('base2').classList.remove('on');
+            document.getElementById('base3').classList.remove('on');
+        }
+    }
+
+    function updateDots(type, max) {
+        for (let i = 1; i <= max; i++) {
+            let dot = document.getElementById(type + i);
+            if (i <= counts[type]) dot.classList.add('on');
+            else dot.classList.remove('on');
+        }
+    }
+// === 선수 등장 음악 ===
+    // 음악 파일을 받으면 아래 배열의 빈 문자열('')에 파일 경로(또는 data URI)를 넣으면 됩니다.
+    // 0~8: 팀1 선수1~9, 9~17: 팀2 선수1~9, 18~26: 팀3 선수1~9
+    const playerSounds = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''];
+    let currentAudio = null;
+    let currentBtn = null;
+
+    function stopAudio() {
+        if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+        if (currentBtn) currentBtn.classList.remove('playing');
+        currentAudio = null; currentBtn = null;
+    }
+
+    // 버튼 안의 글자를 브라우저에서 자유롭게 수정할 수 있도록 <button>을 <div>로 교체
+    document.querySelectorAll('button.player-btn').forEach(b => {
+        const d = document.createElement('div');
+        d.className = b.className;
+        d.dataset.idx = b.dataset.idx;
+        d.setAttribute('role', 'button');
+        d.textContent = b.textContent;
+        b.replaceWith(d);
+    });
+
+    document.querySelectorAll('.player-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (editMode) return; // 수정 모드에서는 음악 재생 안 함
+            const idx = parseInt(btn.dataset.idx);
+            const src = playerSounds[idx];
+
+            // 같은 버튼을 다시 누르면 정지
+            if (currentBtn === btn) { stopAudio(); return; }
+            stopAudio();
+
+            if (!src) {
+                // 음악 파일이 아직 없는 경우: 잠깐 빨갛게 표시
+                btn.classList.add('nofile');
+                setTimeout(() => btn.classList.remove('nofile'), 400);
+                return;
+            }
+            currentAudio = new Audio(src);
+            currentBtn = btn;
+            btn.classList.add('playing');
+            currentAudio.addEventListener('ended', stopAudio);
+            currentAudio.play().catch(() => stopAudio());
+        });
+    });
+// === 제목/버튼 이름 수정 모드 ===
+    let editMode = false;
+    const editToggle = document.getElementById('editToggle');
+    const playerBox = document.getElementById('playerButtons');
+    const editables = () => Array.from(document.querySelectorAll('#playerButtons .row-label, #playerButtons .player-btn'));
+
+    // 제목 라벨은 드래그 시작에서 제외되도록 clickable 클래스 부여
+    document.querySelectorAll('#playerButtons .row-label').forEach(l => l.classList.add('clickable'));
+    editables().forEach(el => { el.dataset.default = el.textContent; });
+
+    function saveNames() {
+        try { localStorage.setItem('scoreboardNames', JSON.stringify(editables().map(el => el.textContent.trim()))); } catch (e) {}
+    }
+    function loadNames() {
+        try {
+            const raw = localStorage.getItem('scoreboardNames');
+            if (!raw) return;
+            const arr = JSON.parse(raw);
+            const els = editables();
+            if (Array.isArray(arr)) els.forEach((el, i) => { if (arr[i]) el.textContent = arr[i]; });
+        } catch (e) {}
+    }
+    loadNames();
+
+    editToggle.addEventListener('click', () => {
+        editMode = !editMode;
+        stopAudio();
+        playerBox.classList.toggle('editing', editMode);
+        editToggle.textContent = editMode ? '✔ 수정 완료' : '✎ 이름 수정';
+        editables().forEach(el => {
+            el.setAttribute('contenteditable', editMode ? 'true' : 'false');
+            if (!el.textContent.trim()) el.textContent = el.dataset.default;
+        });
+        if (!editMode) saveNames();
+    });
+
+    playerBox.addEventListener('keydown', e => {
+        if (editMode && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+    });
+    playerBox.addEventListener('paste', e => {
+        if (!editMode) return;
+        e.preventDefault();
+        const t = (e.clipboardData || window.clipboardData).getData('text').replace(/\s+/g, ' ');
+        document.execCommand('insertText', false, t);
+    });
+    playerBox.addEventListener('input', () => { if (editMode) saveNames(); });
+</script>
+</body>
+</html>
